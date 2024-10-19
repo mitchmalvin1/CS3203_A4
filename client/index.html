@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push-to-Talk Application</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Push-to-Talk Application</h1>
+    
+    <!-- Ask for student's name -->
+    <input type="text" id="studentNameInput" placeholder="Enter your name" required>
+    <button id="submitNameButton" onclick="submitName()">Submit Name</button>
+
+    <!-- Push-to-Talk Button -->
+    <button id="pttButton" onmousedown="startStream()" onmouseup="stopStream()">Push-to-Talk</button>
+
+    <p id="status">Please enter your name to start</p>
+
+    <script src="app.js"></script>
+</body>
+</html>

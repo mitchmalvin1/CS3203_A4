@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+/* Input for student's name */
+#studentNameInput {
+    padding: 10px;
+    margin: 10px;
+    font-size: 16px;
+}
+
+/* Buttons */
+#submitNameButton, #pttButton {
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#submitNameButton:hover, #pttButton:hover {
+    background-color: #45a049;
+}
+
+/* Initially hide the Push-to-Talk button */
+#pttButton {
+    display: none;
+}
+
+/* Status message */
+#status {
+    margin: 20px;
+    font-size: 18px;
+}
