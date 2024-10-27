@@ -4,22 +4,34 @@ import wave
 import os
 import pyaudio
 import ffmpeg
+import socket
+from asyncio import Queue
 
-# Global variable to store the current client connection
-current_client = None
+connection_queue = Queue()
 
 # Set up PyAudio for live playback
 p = pyaudio.PyAudio()
 stream = None
-audio_frames = []
 
-# Function to initialize audio playback stream
+def get_public_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        s.connect(('8.8.8.8', 1))  # Google DNS server
+        local_ip = s.getsockname()[0]
+        s.close()
+        print(f"Public IP address of server: {local_ip}")
+        return local_ip
+    except Exception as e:
+        print(f"Unable to get local IP: {e}")
+        return None
+
+
 def start_audio_stream():
     global stream
     if stream is None:
         stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, output=True)
 
-# Function to stop audio playback stream
 def stop_audio_stream():
     global stream
     if stream is not None:
@@ -27,43 +39,52 @@ def stop_audio_stream():
         stream.close()
         stream = None
 
-# Handle each WebSocket connection
-async def handle_connection(websocket, path):
-    global current_client
+async def handle_client(websocket, path):
+    await connection_queue.put(websocket)
+    if connection_queue.qsize() > 1 :
+        await websocket.send("occupied")
+    print("Client added to queue.")
+    while True:
+        # keeps the websocket alive for 60s,
+        # otherwise the implementation of the websocket will cause it to close itself when caller terminates
+        # ANNOYING AF >:( !!!!!!
+        # see: https://github.com/aaugustin/websockets/issues/122
+        await asyncio.sleep(60)
 
-    if current_client is not None:
-        # Reject new connections if another client is already streaming
-        await websocket.send("Another student is already talking, please wait.")
-        await websocket.close()
-        return
 
-    current_client = websocket
-    print("A student connected!")
-
-    student_name = None
-    audio_data = bytearray()
-
-    try:
-        async for message in websocket:
-            if isinstance(message, str):
-                if not student_name:
-                    student_name = message
-                    print(f"Student's name: {student_name}")
-            # elif isinstance(message, bytes):
-            else :
-                print("Receiving and playing audio data...")
-                start_audio_stream()  # Start the audio stream if not already started
-                stream.write(message)  # Play the received audio data
-                audio_frames.append(message)
-    except websockets.ConnectionClosed as e:
-        print(f"Connection closed: {e}")
-    finally:
-       
-        await write_wav_file(student_name, audio_frames)
-            
-        stop_audio_stream()
-        current_client = None  # Allow a new connection
-        print("Student disconnected")
+async def process_connections():
+    while True:
+        if not connection_queue.empty():
+            audio_frames = []
+            websocket = await connection_queue.get()
+            print('Fetched websocket from q')
+            print(f"WebSocket state: {websocket.state}") #this will print closed without the sleep in handle_client
+            print(websocket)
+            student_name = None
+            while True : 
+                try:
+                    async for message in websocket:
+                        print(message)
+                        if isinstance(message, str):
+                            if not student_name:
+                                student_name = message
+                                print(f"Student's name: {student_name}")
+                        else :
+                            print("Receiving and playing audio data...")
+                            start_audio_stream()  # Start the audio stream if not already started
+                            stream.write(message)  # Play the received audio data
+                            audio_frames.append(message)
+                except websockets.ConnectionClosed as e:
+                    print(f"Connection closed: {e}")
+                finally:
+                    await write_wav_file(student_name, audio_frames)
+                    stop_audio_stream()
+                    audio_frames = []
+                    print("Student disconnected")
+                    break
+        else:
+            # If queue is empty, sleep for a short period before checking again
+            await asyncio.sleep(1)
 
 # Write the accumulated PCM data to a WAV file
 async def write_wav_file(student_name,frames):
@@ -77,9 +98,15 @@ async def write_wav_file(student_name,frames):
     print(f"Audio saved to {filename}")
 
 async def main():
-    async with websockets.serve(handle_connection, "localhost", 8000):
-        print("WebSocket server is listening on ws://localhost:8000")
-        await asyncio.Future()  # Run the server forever
+    server = await websockets.serve(handle_client, get_public_ip(), 8000)
+    print("WebSocket server started on ws://localhost:8000")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    # Schedule the background task to process connections
+    asyncio.ensure_future(process_connections())
+
+    # Keep the server running
+    await server.wait_closed()
+
+# Start the event loop and run the main function
+asyncio.run(main())
+

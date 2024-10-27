@@ -1,24 +1,33 @@
 # CS3203 PTP WebSocket
 
 ## Initialization
-To run client on `localhost:8080`, we can simply setup a web server provided by python using
+To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, simply sun `python3 server/server.py`. Note down the public IP address that the server is listening at.
+
+Edit the public IP address of the server at `app.js`
+```
+ws = new WebSocket('ws://{server_public_IP}:8000'); 
+```
+
+To run client on `localhost:8080`, go to `/client` directory and we can simply setup a web server provided by python using
 
 ```
 python3 -m http.server 8080
 ```
-
-To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, simply sun `python3 server/server.py` and the server will listen at `localhost:8000`
 
 ## Running
 Once the client page is opened up in `localhost:8080`, a websocket connection will be established with the server and you can simply enter the name and start to push and hold the button to start talking. Once the button is released, an audio file named `{student_name}_recorded_audio.webm` will be downloaded in your browser. This is client side's recorded can be used to compare against server's audio later on. To close the websocket connection, simply reload the client page (not ideal but for not its like this).
 
 On the server's side, the audio will be streamed live and once the connection is closed, the audio will also be saved onto a file named `{student_name}_{unique_id}.wav`
 
-## Problem faced and attempted solution
-### Incompatible audio format between client and server
+## Problems faced
+### 1. Incompatible audio format between client and server
 Initialy, client is using `MediaRecorder` as suggested by the sample code given on canvas. But `MediaRecorder` produces audio data in `.webm` (compressed) format and sends it through the websocket to the webserver to be played using `PyAudio`. However, `PyAudio` can only play the raw audio format `.wav` (or PCM). 
 
-#### Converting the format on server's side
+### 2. WebSocket automatically closed when the caller coroutine exits
+Originally, there will be a coroutine that accepts a websocket connection from a client then pushes it to a `AsyncQueue` as well as another coroutine that reads from the `AsyncQueue` and processes (streams) the content. However, I realized after the websocket is pushed to the `AsyncQueue` and the caller coroutine exits. The websocket is automatically closed (due to the way the websocket API is defined in Python). See [this](https://github.com/python-websockets/websockets/issues/122).
+
+## Attempted Solutions
+### 1. Converting the format on server's side
 Due to the incompatible format, I initially thought that the server side can simply convert it to the raw format (`.wav`) upon receiving in the websocket.
 ```
  # Decode the .webm using ffmpeg to raw PCM
@@ -36,7 +45,7 @@ stream.write(audio_data)
 ```
 This solution doesn't work and just produces static noise (idk why).
 
-#### Converting the format on client's side
+### 2. Converting the format on client's side
 The next solution involves converting the format on client's side to send `.wav` format directly. This means that we can no longer use the JS `MediaRecorder` as suggested like this : 
 
 ```
@@ -71,7 +80,7 @@ navigator.mediaDevices.getUserMedia({ audio: true })
     });
 ```
 
-Solution  : 
+Rather, we must use a different client API to record the audio and send `.wav` directly to server
 
 ```
 // Start streaming audio using Web Audio API with AudioWorklet
@@ -118,6 +127,5 @@ async function startStream() {
 }
 ```
 
-I have tested locally with one client and one server only. It kinda works but the voice is a bit unclear (you can still make out what the person is saying)
-
-
+### 3. Make the `handle_client()` coroutine sleep for a fixed time
+By forcefully introducing `await asyncio.sleep(60)` in server's `handle_client()`, we ensure that this coroutine will not terminate and hence the websocket will not be automatically closed by the time it is accessed from the `AsyncQueue`.
