@@ -20,7 +20,6 @@ def get_public_ip():
         s.connect(('8.8.8.8', 1))  # Google DNS server
         local_ip = s.getsockname()[0]
         s.close()
-        print(f"Public IP address of server: {local_ip}")
         return local_ip
     except Exception as e:
         print(f"Unable to get local IP: {e}")
@@ -41,9 +40,9 @@ def stop_audio_stream():
 
 async def handle_client(websocket, path):
     await connection_queue.put(websocket)
-    if connection_queue.qsize() > 1 :
+    if connection_queue.qsize() > 0 :
         await websocket.send("occupied")
-    print("Client added to queue.")
+        print("Client added to queue.")
     while True:
         # keeps the websocket alive for 60s,
         # otherwise the implementation of the websocket will cause it to close itself when caller terminates
@@ -64,13 +63,13 @@ async def process_connections():
             while True : 
                 try:
                     async for message in websocket:
-                        print(message)
+                        #print(message)
                         if isinstance(message, str):
                             if not student_name:
                                 student_name = message
                                 print(f"Student's name: {student_name}")
                         else :
-                            print("Receiving and playing audio data...")
+                            #print("Receiving and playing audio data...")
                             start_audio_stream()  # Start the audio stream if not already started
                             stream.write(message)  # Play the received audio data
                             audio_frames.append(message)
@@ -98,8 +97,9 @@ async def write_wav_file(student_name,frames):
     print(f"Audio saved to {filename}")
 
 async def main():
-    server = await websockets.serve(handle_client, get_public_ip(), 8000)
-    print("WebSocket server started on ws://localhost:8000")
+    public_ip = get_public_ip()
+    server = await websockets.serve(handle_client, public_ip, 8000)
+    print(f"WebSocket server started on ws://{public_ip}:8000")
 
     # Schedule the background task to process connections
     asyncio.ensure_future(process_connections())
