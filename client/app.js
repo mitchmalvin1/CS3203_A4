@@ -1,105 +1,3 @@
-// let ws;
-// let mediaRecorder;
-// let audioChunks = [];
-// let studentName = "";
-// let recordedBlob = null;
-
-// // Connect to WebSocket server
-// function connectWebSocket() {
-//     ws = new WebSocket('ws://localhost:8000');
-//     ws.onopen = () => {
-//         document.getElementById('status').innerText = "Connected to server";
-//     };
-//     ws.onclose = () => {
-//         document.getElementById('status').innerText = "Disconnected from server";
-//     };
-//     ws.onerror = (error) => {
-//         console.error("WebSocket Error: ", error);
-//     };
-// }
-
-// // Submit student's name
-// function submitName() {
-//     const nameInput = document.getElementById('studentNameInput');
-//     studentName = nameInput.value.trim();
-
-//     if (studentName) {
-//         document.getElementById('status').innerText = `Welcome, ${studentName}! Press and hold the button to talk.`;
-//         document.getElementById('pttButton').style.display = "inline-block"; // Show PTT button
-//         document.getElementById('studentNameInput').style.display = "none"; // Hide input field
-//         document.getElementById('submitNameButton').style.display = "none"; // Hide submit button
-//     } else {
-//         alert("Please enter your name.");
-//     }
-// }
-
-// // Start recording audio when button is pressed
-// function startStream() {
-//     if (mediaRecorder && mediaRecorder.state === "recording") return;
-
-    // navigator.mediaDevices.getUserMedia({ audio: true })
-    //     .then(stream => {
-    //         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-    //         audioChunks = [];
-
-    //         // Send the student name as the first message to the server
-    //         if (ws.readyState === WebSocket.OPEN) {
-    //             ws.send(JSON.stringify({ type: "name", data: studentName }));
-    //         }
-
-    //         // When audio data is available
-    //         mediaRecorder.ondataavailable = function(event) {
-    //             if (event.data.size > 0) {
-    //                 audioChunks.push(event.data);
-    //                 // Send audio data to WebSocket server
-    //                 if (ws.readyState === WebSocket.OPEN) {
-    //                     console.log(`sending : ${event.data}`)
-    //                     ws.send(event.data);
-    //                 }
-    //             }
-    //         };
-
-    //         // Start recording
-    //         mediaRecorder.start(100); // Record in chunks of 100ms
-    //         document.getElementById('status').innerText = "Streaming and recording audio...";
-    //     })
-    //     .catch(error => {
-    //         console.error('Error accessing microphone: ', error);
-    //     });
-// }
-
-// // Stop recording audio when button is released
-// function stopStream() {
-//     if (mediaRecorder && mediaRecorder.state === "recording") {
-//         mediaRecorder.stop();
-
-//         // When recording stops, save the audio file automatically
-//         mediaRecorder.onstop = function() {
-//             recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-
-//             // Automatically trigger download when recording stops
-//             const downloadLink = document.createElement('a');
-//             const url = URL.createObjectURL(recordedBlob);
-
-//             downloadLink.href = url;
-//             downloadLink.download = `${studentName}_recorded_audio.webm`;
-//             downloadLink.style.display = 'none'; // Hide the link
-//             document.body.appendChild(downloadLink); // Append to the DOM to trigger the download
-
-//             downloadLink.click(); // Trigger download
-//             document.body.removeChild(downloadLink); // Remove link from the DOM
-
-//             document.getElementById('status').innerText = "Audio saved and download triggered.";
-//         };
-
-//         document.getElementById('status').innerText = "Stopped streaming and recording.";
-//     }
-// }
-
-// // Initialize WebSocket on page load
-// window.onload = function() {
-//     connectWebSocket();
-// };
 let ws;
 let audioContext;
 let workletNode;
@@ -109,18 +7,23 @@ let isStreaming = false;
 let recordedChunks = [];
 
 function connectWebSocket() {
-    ws = new WebSocket('ws://localhost:8000');
+    ws = new WebSocket('ws://192.168.68.101:8000'); //change this to the public ip of the server
     ws.onopen = () => {
-        document.getElementById('status').innerText = "Connected to server";
+        document.getElementById('status').innerText = "Connected to server websocket";
+    };
+    ws.onmessage = (event) => {
+        console.log(event.data)
+        if (event.data === "occupied") {
+            document.getElementById('status').innerText = "Connected to the server websocket, but another client is talking. Please wait.";
+        } 
     };
     ws.onclose = () => {
-        document.getElementById('status').innerText = "Disconnected from server";
+        document.getElementById('status').innerText = "Disconnected from server websocket";
     };
     ws.onerror = (error) => {
         console.error("WebSocket Error: ", error);
     };
 }
-
 
 function submitName() {
     const nameInput = document.getElementById('studentNameInput');
@@ -138,6 +41,7 @@ function submitName() {
 
 // Start streaming audio using Web Audio API with AudioWorklet
 async function startStream() {
+    connectWebSocket();
     if (isStreaming) return;
 
     audioContext = new AudioContext({ sampleRate: 16000 });
@@ -163,9 +67,9 @@ async function startStream() {
                 const pcmDataBuffer = event.data; // The buffer sent from the worklet
                 // Save PCM data to an array for later use
                 recordedChunks.push(new Int16Array(pcmDataBuffer)); 
-                console.log(pcmDataBuffer)
+                //console.log(pcmDataBuffer)
                 if (ws.readyState === WebSocket.OPEN) {
-                    console.log("sending to socket")
+                    //console.log("sending to socket")
                     ws.send(pcmDataBuffer); // Send the PCM data buffer over WebSocket
                 }
             };
@@ -196,6 +100,7 @@ function stopStream() {
 
     saveAudioToFile();
     document.getElementById('status').innerText = "Stopped streaming raw PCM audio.";
+    ws.close();
 }
 
 // Convert the recorded PCM data to a WAV file and trigger a download
@@ -258,70 +163,3 @@ function writeString(view, offset, string) {
         view.setUint8(offset + i, string.charCodeAt(i));
     }
 }
-
-// Initialize WebSocket on page load
-window.onload = function() {
-    connectWebSocket();
-};
-
-
-// Using Media Recorder does not work as it apparently sends the compressed format (.webm) but PyAudio can only play
-// raw audio (PCM or .wav)
-// function startStream() {
-//     if (mediaRecorder && mediaRecorder.state === "recording") return;
-
-//     navigator.mediaDevices.getUserMedia({ audio: true })
-//         .then(stream => {
-//             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-//             audioChunks = [];
-
-//             if (ws.readyState === WebSocket.OPEN) {
-//                 ws.send(JSON.stringify({ type: "name", data: studentName }));
-//             }
-
-//             mediaRecorder.ondataavailable = function(event) {
-//                 if (event.data.size > 0) {
-//                     audioChunks.push(event.data);
-
-//                     if (ws.readyState === WebSocket.OPEN) {
-//                         console.log(`sending : ${event.data}`)
-//                         ws.send(event.data);
-//                     }
-//                 }
-//             };
-
-
-//             mediaRecorder.start(100); // Record in chunks of 100ms
-//             document.getElementById('status').innerText = "Streaming and recording audio...";
-//         })
-//         .catch(error => {
-//             console.error('Error accessing microphone: ', error);
-//         });
-// }
-
-
-// function stopStream() {
-//     if (mediaRecorder && mediaRecorder.state === "recording") {
-//         mediaRecorder.stop();
-
-//         // When recording stops, save the audio file automatically
-//         mediaRecorder.onstop = function() {
-//             recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-
-//             const downloadLink = document.createElement('a');
-//             const url = URL.createObjectURL(recordedBlob);
-
-//             downloadLink.href = url;
-//             downloadLink.download = `${studentName}_recorded_audio.webm`;
-//             downloadLink.style.display = 'none'; // Hide the link
-//             document.body.appendChild(downloadLink); // Append to the DOM to trigger the download
-
-//             downloadLink.click(); // Trigger download
-//             document.body.removeChild(downloadLink); // Remove link from the DOM
-
-//             document.getElementById('status').innerText = "Audio saved and download triggered.";
-//         };
-
-//         document.getElementById('status').innerText = "Stopped streaming and recording.";
-//     }
-// }
