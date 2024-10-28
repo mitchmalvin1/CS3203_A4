@@ -8,7 +8,7 @@ let isStreaming = false;
 let recordedChunks = [];
 
 function connectWebSocket() {
-    ws = new WebSocket('ws://69e8-218-212-26-228.ngrok-free.app'); //change this to the public URL of the server after running ngrok
+    ws = new WebSocket('ws://5e6c-218-212-26-228.ngrok-free.app'); //change this to the public URL of the server after running ngrok
     ws.onopen = () => {
         document.getElementById('status').innerText = "Connected to server websocket";
     };
@@ -119,6 +119,7 @@ function saveAudioToFile() {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+    recordedChunks = []
 }
 
 // Helper function to merge all PCM chunks into a single buffer
