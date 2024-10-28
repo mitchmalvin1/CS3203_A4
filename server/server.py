@@ -58,7 +58,8 @@ async def process_connections():
             websocket = await connection_queue.get()
             print('Fetched websocket from q')
             print(f"WebSocket state: {websocket.state}") #this will print closed without the sleep in handle_client
-            print(websocket)
+            await websocket.send("available")
+            print("signal availability to client")
             student_name = None
             while True : 
                 try:

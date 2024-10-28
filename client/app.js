@@ -2,6 +2,7 @@ let ws;
 let audioContext;
 let workletNode;
 let microphoneNode;
+let isServerAvailable = true;
 let studentName = "";
 let isStreaming = false;
 let recordedChunks = [];
@@ -14,8 +15,12 @@ function connectWebSocket() {
     ws.onmessage = (event) => {
         console.log(event.data)
         if (event.data === "occupied") {
+            isServerAvailable = false;
             document.getElementById('status').innerText = "Connected to the server websocket, but another client is talking. Please wait.";
-        } 
+        } else if (event.data === "available") {
+            isServerAvailable = true;
+            document.getElementById('status').innerText = "Server is available, streaming audio..";
+        }
     };
     ws.onclose = () => {
         document.getElementById('status').innerText = "Disconnected from server websocket";
@@ -64,19 +69,17 @@ async function startStream() {
 
             // Handle messages from the AudioWorkletProcessor (PCM data)
             workletNode.port.onmessage = (event) => {
-                const pcmDataBuffer = event.data; // The buffer sent from the worklet
-                // Save PCM data to an array for later use
-                recordedChunks.push(new Int16Array(pcmDataBuffer)); 
-                //console.log(pcmDataBuffer)
-                if (ws.readyState === WebSocket.OPEN) {
-                    //console.log("sending to socket")
-                    ws.send(pcmDataBuffer); // Send the PCM data buffer over WebSocket
+                if (isServerAvailable) {
+                    const pcmDataBuffer = event.data; // The buffer sent from the worklet
+                    // Save PCM data to an array for later use
+                    recordedChunks.push(new Int16Array(pcmDataBuffer)); 
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(pcmDataBuffer); // Send the PCM data buffer over WebSocket
+                    }
                 }
             };
 
             microphoneNode.connect(workletNode);
-
-            document.getElementById('status').innerText = "Streaming raw PCM audio using AudioWorklet...";
         })
         .catch(error => {
             console.error('Error accessing microphone: ', error);
