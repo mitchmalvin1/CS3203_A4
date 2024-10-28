@@ -1,11 +1,16 @@
 # CS3203 PTP WebSocket
 
 ## Initialization
-To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, simply sun `python3 server/server.py`. Note down the public IP address that the server is listening at.
+To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, install Ngrok for tunneling services from [here](https://ngrok.com/download) depending on your OS, remember to add the authToken as well (yeah need to sign up or can just use my authToken).
 
-Edit the public IP address of the server at `app.js`
+Run `ngrok http 8000` to initialize the ngrok service, you will then see the **public URL** provided by ngrok, then run `python3 server/server.py` to initialize the server.
+
+Edit the public URL of the server at `app.js` : 
 ```
-ws = new WebSocket('ws://{server_public_IP}:8000'); 
+ws = new WebSocket('ws://{public_URL_provided_by_ngrok}'); 
+
+// For instance : 
+ws = new WebSocket('ws://69e8-218-212-26-228.ngrok-free.app'); 
 ```
 
 To run client on `localhost:8080`, go to `/client` directory and we can simply setup a web server provided by python using
@@ -17,7 +22,7 @@ python3 -m http.server 8080
 ## Running
 Once the client page is opened up in `localhost:8080`, a websocket connection will be established with the server and you can simply enter the name and start to push and hold the button to start talking. Once the button is released, an audio file named `{student_name}_recorded_audio.webm` will be downloaded in your browser. This is client side's recorded can be used to compare against server's audio later on. To close the websocket connection, simply reload the client page (not ideal but for not its like this).
 
-On the server's side, the audio will be streamed live and once the connection is closed, the audio will also be saved onto a file named `{student_name}_{unique_id}.wav`
+On the server's side, the audio will be streamed live and once the connection is closed, the audio will also be saved onto a file named `{student_name}_server_{unique_id}.wav` inside the `./audio-files` directory.
 
 ## Problems faced
 ### 1. Incompatible audio format between client and server

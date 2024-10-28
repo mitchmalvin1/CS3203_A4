@@ -13,19 +13,6 @@ connection_queue = Queue()
 p = pyaudio.PyAudio()
 stream = None
 
-def get_public_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0)
-        s.connect(('8.8.8.8', 1))  # Google DNS server
-        local_ip = s.getsockname()[0]
-        s.close()
-        return local_ip
-    except Exception as e:
-        print(f"Unable to get local IP: {e}")
-        return None
-
-
 def start_audio_stream():
     global stream
     if stream is None:
@@ -88,7 +75,9 @@ async def process_connections():
 
 # Write the accumulated PCM data to a WAV file
 async def write_wav_file(student_name,frames):
-    filename = f"./audio-files/{student_name}_{int(asyncio.get_event_loop().time())}.wav"
+    if not os.path.exists('./audio-files'):
+        os.makedirs('./audio-files')
+    filename = f"./audio-files/{student_name}_server_{int(asyncio.get_event_loop().time())}.wav"
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)
         wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))  # 2 bytes for 16-bit PCM
@@ -98,9 +87,8 @@ async def write_wav_file(student_name,frames):
     print(f"Audio saved to {filename}")
 
 async def main():
-    public_ip = get_public_ip()
-    server = await websockets.serve(handle_client, public_ip, 8000)
-    print(f"WebSocket server started on ws://{public_ip}:8000")
+    server = await websockets.serve(handle_client, "0.0.0.0", 8000) #listen on all interface
+    print("WebSocket server started.")
 
     # Schedule the background task to process connections
     asyncio.ensure_future(process_connections())
