@@ -1,17 +1,9 @@
 # CS3203 PTP WebSocket
 
 ## Initialization
-To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, install Ngrok for tunneling services from [here](https://ngrok.com/download) depending on your OS, remember to add the authToken as well (yeah need to sign up or can just use my authToken).
+To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, install Ngrok for tunneling services from [here](https://ngrok.com/download) depending on your OS, remember to add the authToken as well (2o3HOydr8lAr8MiP2xosf0iZ0M0_6k95qSRWW5GaHb56e4YQH).
 
-Run `ngrok http 8000` to initialize the ngrok service, you will then see the **public URL** provided by ngrok, then run `python3 server/server.py` to initialize the server.
-
-Edit the public URL of the server at `app.js` : 
-```
-ws = new WebSocket('ws://{public_URL_provided_by_ngrok}'); 
-
-// For instance : 
-ws = new WebSocket('ws://69e8-218-212-26-228.ngrok-free.app'); 
-```
+Run `ngrok http --url=legally-trusting-oarfish.ngrok-free.app 8000` to initialize the ngrok service, then run `python3 server/server.py` to initialize the server. (This means that we no longer have to modify `app.js` because server always has the same static URL setup with my token).
 
 To run client on `localhost:8080`, go to `/client` directory and we can simply setup a web server provided by python using
 

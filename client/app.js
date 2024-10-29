@@ -8,7 +8,7 @@ let isStreaming = false;
 let recordedChunks = [];
 
 function connectWebSocket() {
-    ws = new WebSocket('ws://5e6c-218-212-26-228.ngrok-free.app'); //change this to the public URL of the server after running ngrok
+    ws = new WebSocket('ws://legally-trusting-oarfish.ngrok-free.app'); 
     ws.onopen = () => {
         document.getElementById('status').innerText = "Connected to server websocket";
     };
