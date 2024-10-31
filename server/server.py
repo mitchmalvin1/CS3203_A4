@@ -61,7 +61,7 @@ async def process_connections():
                             start_audio_stream()  # Start the audio stream if not already started
                             stream.write(message)  # Play the received audio data
                             audio_frames.append(message)
-                except websockets.ConnectionClosed as e:
+                except websockets.ConnectionClosed or websockets.ConnectionClosedOK as e:
                     print(f"Connection closed: {e}")
                 finally:
                     await write_wav_file(student_name, audio_frames)

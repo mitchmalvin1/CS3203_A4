@@ -1,7 +1,7 @@
 # CS3203 PTP WebSocket
 
 ## Initialization
-To run the server, you can choose to create a python virtual env and run `pip install -run requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, install Ngrok for tunneling services from [here](https://ngrok.com/download) depending on your OS, remember to add the authToken as well (2o3HOydr8lAr8MiP2xosf0iZ0M0_6k95qSRWW5GaHb56e4YQH).
+To run the server, you can choose to create a python virtual env and run `pip install -r requirements.txt`. However, depending on the OS, you might need to install `PyAudio` separately by following the guide [here](https://pypi.org/project/PyAudio/). Afterwards, install Ngrok for tunneling services from [here](https://ngrok.com/download) depending on your OS, remember to add the authToken as well (2o3HOydr8lAr8MiP2xosf0iZ0M0_6k95qSRWW5GaHb56e4YQH).
 
 Run `ngrok http --url=legally-trusting-oarfish.ngrok-free.app 8000` to initialize the ngrok service, then run `python3 server/server.py` to initialize the server. (This means that we no longer have to modify `app.js` because server always has the same static URL setup with my token).
 
