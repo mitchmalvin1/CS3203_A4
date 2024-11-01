@@ -19,6 +19,10 @@ function connectWebSocket() {
             document.getElementById('status').innerText = "Connected to the server websocket, but another client is talking. Please wait.";
         } else if (event.data === "available") {
             isServerAvailable = true;
+            if (ws.readyState === WebSocket.OPEN) {
+                console.log(`sending name : ${studentName}`);
+                ws.send(studentName);
+            }
             document.getElementById('status').innerText = "Server is available, streaming audio..";
         }
     };
@@ -62,10 +66,6 @@ async function startStream() {
 
             // Create an AudioWorkletNode that uses the registered processor
             workletNode = new AudioWorkletNode(audioContext, 'pcm-worklet-processor');
-
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(studentName);
-            }
 
             // Handle messages from the AudioWorkletProcessor (PCM data)
             workletNode.port.onmessage = (event) => {
