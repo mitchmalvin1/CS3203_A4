@@ -27,9 +27,9 @@ def stop_audio_stream():
 
 async def handle_client(websocket, path):
     await connection_queue.put(websocket)
-    if connection_queue.qsize() > 0 :
+    print(f"Client added to queue, current queue size : {connection_queue.qsize()}")
+    if connection_queue.qsize() > 1 :
         await websocket.send("occupied")
-        print("Client added to queue.")
     while True:
         # keeps the websocket alive for 60s,
         # otherwise the implementation of the websocket will cause it to close itself when caller terminates
@@ -45,11 +45,11 @@ async def process_connections():
             websocket = await connection_queue.get()
             print('Fetched websocket from q')
             print(f"WebSocket state: {websocket.state}") #this will print closed without the sleep in handle_client
-            await websocket.send("available")
-            print("signal availability to client")
             student_name = None
             while True : 
                 try:
+                    await websocket.send("available")
+                    print("signal availability to client")
                     async for message in websocket:
                         #print(message)
                         if isinstance(message, str):
